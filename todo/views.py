@@ -7,11 +7,16 @@ from rest_framework.views import APIView
 from datetime import datetime,timedelta
 from django.utils.timezone import make_aware
 from rest_framework.permissions import AllowAny
+from .scheduler import schedule_task_reminder
 import pytz
 
 class TaskListCreate(generics.ListCreateAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
+
+    def perform_create(self, serializer):
+        task = serializer.save()
+        schedule_task_reminder(task)
 
     def get_queryset(self):
         queryset = Task.objects.all()
@@ -48,6 +53,10 @@ class TaskRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
     lookup_field = 'pk'
+
+    def perform_update(self, serializer):
+        task = serializer.save()
+        schedule_task_reminder(task)
 
 
 class TasksByDate(APIView):

@@ -4,19 +4,25 @@ from .models import Task
 import pytz
 
 scheduler = BackgroundScheduler()
+scheduler.start()
 
-def check_reminders():
-    current_time = now()
-    due_tasks = Task.objects.filter(
-        remind_at__lte = current_time,
-        completed = False
-    )
+def send_task_reminder(task_id):
+    try:
+        task = Task.objects.get(id=task_id)
+        if not task.completed:
+            print(f"⏰ [Reminder] Task '{task.name}' starts at {task.start_time}")
+            # Future: call a Firebase/Socket API from here
+    except Task.DoesNotExist:
+        print(f"Task {task_id} not found for reminder.")
 
-    for task in due_tasks:
-        print(f"Reminder: {task.title} is starting soon at {task.start_time}!")
-        # to prevent repeating, you could:
-        # mark task as reminded
-        # or clear remind_at
-
-        task.remind_at = None
-        task.save()
+def schedule_task_reminder(task):
+    if task.reminder_time and task.reminder_time > now():
+        job_id = f"task_{task.id}_reminder"
+        scheduler.add_job(
+            send_task_reminder,
+            trigger='date',
+            run_date=task.reminder_time,
+            args=[task.id],
+            id=job_id,
+            replace_existing=True
+        )

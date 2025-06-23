@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 # Create your models here.
 
@@ -11,7 +12,7 @@ class Task(models.Model):
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     category = models.CharField(blank=True, null=True)
-    remind_at = models.DateTimeField(null=True, blank=True)
+    remind_time = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.name
