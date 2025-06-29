@@ -1,8 +1,15 @@
 from rest_framework import serializers
-from .models import Task
+from .models import Task, Tag
 import pytz
 
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ['id', 'name']
+
 class TaskSerializer(serializers.ModelSerializer):
+    tags = TagSerializer(many= True, required=False)
+
     timezone = serializers.CharField(write_only=True, required=False)
 
     class Meta:
@@ -19,6 +26,7 @@ class TaskSerializer(serializers.ModelSerializer):
     
     
     def create(self,validated_data):
+        tags_data = validated_data.pop('tags', [])
         tz_name = validated_data.pop('timezone', None)
         if tz_name:
             tz = pytz.timezone(tz_name)
@@ -29,7 +37,15 @@ class TaskSerializer(serializers.ModelSerializer):
                 else:
                     validated_data[key] = dt.astimezone(pytz.UTC)
 
-        return super().create(validated_data)
+        #create the task
+        task = super().create(validated_data)
+
+        #add tags (create if not exist)
+        for tag_data in tags_data:
+            tag, _ = Tag.objects.get_or_create(name = tag_data['name'])
+            task.tags.add(tag)
+            
+        return task
     
     def to_representation(self, instance):
         #use default serialization
